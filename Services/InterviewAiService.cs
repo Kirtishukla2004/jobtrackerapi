@@ -51,12 +51,17 @@ namespace JobTracker.API.Services
                             Job Description:
                              {request.JobDescription}";
 
-            var apiKey = _configuration["Groq:ApiKey"];
+            var apiKey = _configuration["GROQ_APIKEY"];
 
-            if (string.IsNullOrEmpty(apiKey))throw new Exception("Groq API key not configured.");
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                throw new Exception("GROQ_APIKEY environment variable is not configured.");
+            }
 
             _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Authorization =new AuthenticationHeaderValue("Bearer", apiKey);
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", apiKey);
+
 
             var body = new
             {

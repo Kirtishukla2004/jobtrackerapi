@@ -23,8 +23,8 @@ public class AuthService:IAuthService
 
      private Tokendto GenerateToken(UsersLoginRecord user)
     {
-        var jwtKey = _config["Jwt:Key"]
-            ?? throw new InvalidOperationException("JWT key missing");
+        var jwtKey = _config["JWT_KEYJOBTRACKER"]
+       ?? throw new InvalidOperationException("JWT key missing");
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

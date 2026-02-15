@@ -16,10 +16,7 @@ namespace JobTracker.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // ---------------- Controllers ----------------
             builder.Services.AddControllers();
-
-            // ---------------- DI ----------------
             builder.Services.AddScoped<DBHelper>();
 
             builder.Services.AddScoped<IJobService, JobService>();
@@ -36,7 +33,7 @@ namespace JobTracker.API
             builder.Services.AddHttpClient<IInterviewAiService, InterviewAiService>();
             builder.Services.AddHttpClient();
 
-            // ---------------- CORS ----------------
+          
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowReact", policy =>
@@ -48,14 +45,16 @@ namespace JobTracker.API
                         .AllowCredentials();
                 });
             });
+          
+            var groqApiKey = Environment.GetEnvironmentVariable("GROQ_APIKEY");
+            if (string.IsNullOrWhiteSpace(groqApiKey))
+                throw new Exception("GROQ_APIKEY environment variable is missing");
 
-            // ---------------- JWT Authentication ----------------
-            var jwtKey = builder.Configuration["Jwt:Key"];
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_KEYJOBTRACKER");
             if (string.IsNullOrWhiteSpace(jwtKey))
-            {
-                throw new Exception("Jwt:Key is not configured");
-            }
+                throw new Exception("JWT_KEYJOBTRACKER environment variable is missing");
 
+      
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -80,16 +79,13 @@ namespace JobTracker.API
 
             var app = builder.Build();
 
-            // ---------------- Middleware order ----------------
             app.UseHttpsRedirection();
-
             app.UseCors("AllowReact");
 
             app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();
-
             app.Run();
         }
     }
