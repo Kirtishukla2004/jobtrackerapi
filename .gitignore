@@ -1,0 +1,11 @@
+﻿# Visual Studio
+.vs/
+
+# Build output
+bin/
+obj/
+
+# Environment & secrets
+appsettings.json
+appsettings.Development.json
+.env
