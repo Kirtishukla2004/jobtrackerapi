@@ -144,9 +144,7 @@ public class AuthService : IAuthService
 
         await _userRepo.SavePasswordResetTokenAsync(user.Id, token, expiry);
 
-        var frontendUrl =
-            Environment.GetEnvironmentVariable("FRONTEND_URL")
-            ?? "https://jobtracker-indol.vercel.app";
+        var frontendUrl = "https://jobtracker-indol.vercel.app/";
 
         var resetLink = $"{frontendUrl}/resetpassword?token={token}";
 
