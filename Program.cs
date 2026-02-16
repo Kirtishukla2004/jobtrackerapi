@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using JobTracker.API.Data;
 using JobTracker.API.Interfaces;
 using JobTracker.API.Repositories;
@@ -33,7 +33,7 @@ namespace JobTracker.API
             builder.Services.AddHttpClient<IInterviewAiService, InterviewAiService>();
             builder.Services.AddHttpClient();
 
-          
+            // ---------- CORS ----------
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowReact", policy =>
@@ -45,7 +45,8 @@ namespace JobTracker.API
                         .AllowCredentials();
                 });
             });
-          
+
+            // ---------- ENV VARIABLES ----------
             var groqApiKey = Environment.GetEnvironmentVariable("GROQ_APIKEY");
             if (string.IsNullOrWhiteSpace(groqApiKey))
                 throw new Exception("GROQ_APIKEY environment variable is missing");
@@ -54,7 +55,18 @@ namespace JobTracker.API
             if (string.IsNullOrWhiteSpace(jwtKey))
                 throw new Exception("JWT_KEYJOBTRACKER environment variable is missing");
 
-      
+            // ✅ FIX: Read SQL Server connection string from ENV
+            var sqlConnectionString =
+                Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION");
+
+            if (!string.IsNullOrWhiteSpace(sqlConnectionString))
+            {
+                // Inject into IConfiguration so DBHelper can read it
+                builder.Configuration["ConnectionStrings:DefaultConnection"] =
+                    sqlConnectionString;
+            }
+
+            // ---------- AUTH ----------
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -76,9 +88,11 @@ namespace JobTracker.API
                         ClockSkew = TimeSpan.Zero
                     };
                 });
+
             builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
             var app = builder.Build();
+
             if (!app.Environment.IsProduction())
             {
                 app.UseHttpsRedirection();
