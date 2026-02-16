@@ -13,12 +13,11 @@ public class EmailServices : IEmailServices
 
     public async Task SendAsync(string to, string subject, string body)
     {
-        var fromEmail =
-            Environment.GetEnvironmentVariable("Email_from")
+        var fromEmail =Environment.GetEnvironmentVariable("Email_from")
             ?? throw new InvalidOperationException("Email_from env variable missing");
 
         var emailPassword =
-            Environment.GetEnvironmentVariable("Email_JobTrackerPassword")
+            Environment.GetEnvironmentVariable("Email_JobTrackerPassowrd")
             ?? throw new InvalidOperationException("Email_JobTrackerPassword env variable missing");
 
         using var client = new SmtpClient("smtp.gmail.com")
