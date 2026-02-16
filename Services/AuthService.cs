@@ -154,7 +154,7 @@ public class AuthService : IAuthService
             user.Username,
             "Reset your password",
             $@"
-            <p>Click the link below to reset your password:</p>
+            <p>Click the link below to reset your password:</p>`
             <p><a href='{resetLink}'>{resetLink}</a></p>
             <p>This link expires in 15 minutes.</p>"
         );
