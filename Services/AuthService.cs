@@ -144,17 +144,27 @@ public class AuthService : IAuthService
 
         await _userRepo.SavePasswordResetTokenAsync(user.Id, token, expiry);
 
-        var frontendUrl = "https://jobtracker-indol.vercel.app/";
-
+        var frontendUrl = "https://jobtracker-indol.vercel.app";
         var resetLink = $"{frontendUrl}/resetpassword?token={token}";
 
-        await _emailServices.SendAsync(user.Username,
-            "Reset your password",
-            $@"
-            <p>Click the link below to reset your password:</p>`
-            <p><a href='{resetLink}'>{resetLink}</a></p>
-            <p>This link expires in 15 minutes.</p>"
-        );
+        var emailBody = $@"
+        <p>Click the link below to reset your password:</p>
+        <p><a href='{resetLink}'>{resetLink}</a></p>
+        <p>This link expires in 15 minutes.</p>";
+
+        try
+        {
+            await _emailServices.SendAsync(
+                user.Username,
+                "Reset your password",
+                emailBody
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Email sending failed:");
+            Console.WriteLine(ex);
+        }
     }
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword)
