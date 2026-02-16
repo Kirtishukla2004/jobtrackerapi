@@ -62,9 +62,6 @@ namespace JobTracker.API
                     sqlConnectionString;
             }
 
-            Console.WriteLine(
-      builder.Configuration.GetConnectionString("DefaultConnection")
-  );
 
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
