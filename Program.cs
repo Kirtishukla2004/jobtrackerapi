@@ -76,10 +76,14 @@ namespace JobTracker.API
                         ClockSkew = TimeSpan.Zero
                     };
                 });
+            builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
             var app = builder.Build();
+            if (!app.Environment.IsProduction())
+            {
+                app.UseHttpsRedirection();
+            }
 
-            app.UseHttpsRedirection();
             app.UseCors("AllowReact");
 
             app.UseAuthentication();
