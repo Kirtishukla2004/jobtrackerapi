@@ -47,7 +47,7 @@ namespace JobTracker.API.Repositories
             new SqlParameter("@Page", filters.Page),
             new SqlParameter("@PageSize", filters.PageSize)};
 
-            return await _dbHelper.ExecutePagedStoredProcedureAsync<JobDatadto>("sp_GetJobsByUser",parameters);
+            return await _dbHelper.ExecutePagedStoredProcedureAsync<JobDatadto>("sp_GetJobsByUser", parameters);
         }
 
         public async Task<List<JobStatusdto>> GetJobStatusesAsync()
