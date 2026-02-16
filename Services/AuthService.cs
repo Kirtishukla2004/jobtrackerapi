@@ -148,7 +148,7 @@ public class AuthService : IAuthService
             Environment.GetEnvironmentVariable("FRONTEND_URL")
             ?? "https://jobtracker-indol.vercel.app";
 
-        var resetLink = $"{https://jobtracker-indol.vercel.app}/resetpassword?token={token}";
+        var resetLink = $"{frontendUrl}/resetpassword?token={token}";
 
         await _emailServices.SendAsync(
             user.Username,
