@@ -17,7 +17,7 @@ public class EmailServices : IEmailServices
             ?? throw new InvalidOperationException("Email_from env variable missing");
 
         var emailPassword =
-            Environment.GetEnvironmentVariable("Email_JobTrackerPassowrd")
+            Environment.GetEnvironmentVariable("Email_JobTrackerPassword")
             ?? throw new InvalidOperationException("Email_JobTrackerPassword env variable missing");
 
         using var client = new SmtpClient("smtp.gmail.com")

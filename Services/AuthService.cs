@@ -148,8 +148,7 @@ public class AuthService : IAuthService
 
         var resetLink = $"{frontendUrl}/resetpassword?token={token}";
 
-        await _emailServices.SendAsync(
-            user.Username,
+        await _emailServices.SendAsync(user.Username,
             "Reset your password",
             $@"
             <p>Click the link below to reset your password:</p>`
