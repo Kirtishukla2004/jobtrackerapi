@@ -15,8 +15,8 @@ namespace JobTracker.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            builder.Services.AddControllers();
 
+            builder.Services.AddControllers();
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowReact", policy =>
@@ -28,7 +28,6 @@ namespace JobTracker.API
                         .AllowCredentials();
                 });
             });
-
             var groqApiKey = Environment.GetEnvironmentVariable("GROQ_APIKEY");
             if (string.IsNullOrWhiteSpace(groqApiKey))
                 throw new Exception("GROQ_APIKEY environment variable is missing");
@@ -37,31 +36,38 @@ namespace JobTracker.API
             if (string.IsNullOrWhiteSpace(jwtKey))
                 throw new Exception("JWT_KEYJOBTRACKER environment variable is missing");
 
+            var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer");
+            if (string.IsNullOrWhiteSpace(jwtIssuer))
+                throw new Exception("Jwt__Issuer environment variable is missing");
+
+            var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience");
+            if (string.IsNullOrWhiteSpace(jwtAudience))
+                throw new Exception("Jwt__Audience environment variable is missing");
+
             var sqlConnectionString =
                 Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION");
 
-            if (!string.IsNullOrWhiteSpace(sqlConnectionString))
-            {
-                builder.Configuration["ConnectionStrings:DefaultConnection"] =
-                    sqlConnectionString;
+            if (string.IsNullOrWhiteSpace(sqlConnectionString))
+                throw new Exception("SQLSERVER_CONNECTION environment variable is missing");
 
-                builder.Services.AddScoped<DBHelper>();
+            builder.Configuration["ConnectionStrings:DefaultConnection"] =
+                sqlConnectionString;
 
-                builder.Services.AddScoped<IJobRepository, JobRepository>();
-                builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-                builder.Services.AddScoped<IQueriesAndFeedbackRepository, QueriesAndFeedbackRepository>();
-                builder.Services.AddScoped<IInterviewQuestionOptionDdlRepository, InterviewQuestionOptionDdlRepository>();
+            builder.Services.AddScoped<DBHelper>();
 
-                builder.Services.AddScoped<IJobService, JobService>();
-                builder.Services.AddScoped<IAuthService, AuthService>();
-                builder.Services.AddScoped<IEmailServices, EmailServices>();
-                builder.Services.AddScoped<IQueriesAndFeedbacksServices, QueriesAndFeedbackServices>();
-                builder.Services.AddScoped<IInterviewQuestionOptionDdlService, InterviewQuestionOptionDdlService>();
-            }
+            builder.Services.AddScoped<IJobRepository, JobRepository>();
+            builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+            builder.Services.AddScoped<IQueriesAndFeedbackRepository, QueriesAndFeedbackRepository>();
+            builder.Services.AddScoped<IInterviewQuestionOptionDdlRepository, InterviewQuestionOptionDdlRepository>();
+
+            builder.Services.AddScoped<IJobService, JobService>();
+            builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IEmailServices, EmailServices>();
+            builder.Services.AddScoped<IQueriesAndFeedbacksServices, QueriesAndFeedbackServices>();
+            builder.Services.AddScoped<IInterviewQuestionOptionDdlService, InterviewQuestionOptionDdlService>();
 
             builder.Services.AddHttpClient<IInterviewAiService, InterviewAiService>();
             builder.Services.AddHttpClient();
-
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
@@ -73,8 +79,8 @@ namespace JobTracker.API
                         ValidateLifetime = true,
                         ValidateIssuerSigningKey = true,
 
-                        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                        ValidAudience = builder.Configuration["Jwt:Audience"],
+                        ValidIssuer = jwtIssuer,
+                        ValidAudience = jwtAudience,
 
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(jwtKey)
@@ -84,14 +90,10 @@ namespace JobTracker.API
                     };
                 });
 
-            
             builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
             var app = builder.Build();
-            if (!app.Environment.IsProduction())
-            {
-                app.UseHttpsRedirection();
-            }
+            app.UseHttpsRedirection();
 
             app.UseCors("AllowReact");
 
@@ -99,6 +101,7 @@ namespace JobTracker.API
             app.UseAuthorization();
 
             app.MapControllers();
+
             app.Run();
         }
     }

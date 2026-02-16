@@ -6,32 +6,43 @@ using JobTracker.API.Interfaces;
 using JobTracker.API.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using static System.Net.WebRequestMethods;
 
-public class AuthService:IAuthService
+public class AuthService : IAuthService
 {
     private readonly IAuthRepository _userRepo;
-    private readonly IConfiguration _config;
     private readonly PasswordHasher<object> _hasher = new();
     private readonly IEmailServices _emailServices;
-    
-    public AuthService(IAuthRepository userRepo, IConfiguration config, IEmailServices emailServices)
+
+    public AuthService(
+        IAuthRepository userRepo,
+        IEmailServices emailServices)
     {
         _userRepo = userRepo;
-        _config = config;
         _emailServices = emailServices;
     }
 
-     private Tokendto GenerateToken(UsersLoginRecord user)
+    private Tokendto GenerateToken(UsersLoginRecord user)
     {
-        var jwtKey = _config["JWT_KEYJOBTRACKER"]
-       ?? throw new InvalidOperationException("JWT key missing");
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEYJOBTRACKER")
+            ?? throw new InvalidOperationException("JWT_KEYJOBTRACKER missing");
+
+        var jwtIssuer = Environment.GetEnvironmentVariable("Jwt__Issuer")
+            ?? throw new InvalidOperationException("Jwt__Issuer missing");
+
+        var jwtAudience = Environment.GetEnvironmentVariable("Jwt__Audience")
+            ?? throw new InvalidOperationException("Jwt__Audience missing");
+
+        var expiresInMinutesStr =
+            Environment.GetEnvironmentVariable("ExpiresInMinutes") ?? "60";
+
+        if (!int.TryParse(expiresInMinutesStr, out var expiresInMinutes))
+            expiresInMinutes = 60;
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expires = DateTime.UtcNow.AddMinutes(
-            int.Parse(_config["Jwt:ExpiresInMinutes"]!)
-        );
+        var expires = DateTime.UtcNow.AddMinutes(expiresInMinutes);
 
         var claims = new[]
         {
@@ -41,8 +52,8 @@ public class AuthService:IAuthService
         };
 
         var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
+            issuer: jwtIssuer,
+            audience: jwtAudience,
             claims: claims,
             expires: expires,
             signingCredentials: creds
@@ -77,11 +88,7 @@ public class AuthService:IAuthService
         try
         {
             await _userRepo.CreateUserAsync(user);
-
-            return new SignupResponsedto
-            {
-                Message = "User created successfully"
-            };
+            return new SignupResponsedto { Message = "User created successfully" };
         }
         catch (Exception ex)
         {
@@ -92,7 +99,6 @@ public class AuthService:IAuthService
                     Message = "Email already exists"
                 };
             }
-
             throw;
         }
     }
@@ -104,7 +110,11 @@ public class AuthService:IAuthService
         if (user == null || !user.IsActive)
             return null;
 
-        var result = _hasher.VerifyHashedPassword( null,user.PasswordHash,request.Password);
+        var result = _hasher.VerifyHashedPassword(
+            null,
+            user.PasswordHash,
+            request.Password
+        );
 
         if (result != PasswordVerificationResult.Success)
             return null;
@@ -113,7 +123,7 @@ public class AuthService:IAuthService
 
         return new SigninResponsedto
         {
-            Token = tokenDto.Token ?? string.Empty,
+            Token = tokenDto.Token,
             ExpiresAt = tokenDto.ExpiresAt,
             Name = user.Name,
             Username = user.Username
@@ -124,24 +134,29 @@ public class AuthService:IAuthService
     {
         if (string.IsNullOrWhiteSpace(email))
             return;
+
         var user = await _userRepo.GetUserByEmailAsync(email);
         if (user == null)
             return;
-        var token = Guid.NewGuid().ToString("N");
 
+        var token = Guid.NewGuid().ToString("N");
         var expiry = DateTime.UtcNow.AddMinutes(15);
 
         await _userRepo.SavePasswordResetTokenAsync(user.Id, token, expiry);
 
-        var resetLink = $"{_config["Frontend:https://jobtracker-indol.vercel.app"]}/resetpassword?token={token}";
+        var frontendUrl =
+            Environment.GetEnvironmentVariable("FRONTEND_URL")
+            ?? "https://jobtracker-indol.vercel.app";
 
-        await _emailServices.SendAsync(user.Username,
+        var resetLink = $"{https://jobtracker-indol.vercel.app}/resetpassword?token={token}";
+
+        await _emailServices.SendAsync(
+            user.Username,
             "Reset your password",
             $@"
             <p>Click the link below to reset your password:</p>
             <p><a href='{resetLink}'>{resetLink}</a></p>
-            <p>This link expires in 15 minutes.</p>
-        "
+            <p>This link expires in 15 minutes.</p>"
         );
     }
 
@@ -152,11 +167,11 @@ public class AuthService:IAuthService
             return false;
 
         var user = await _userRepo.GetUserByResetTokenAsync(token);
-
         if (user == null)
             return false;
 
-        if (user.ResetPasswordTokenExpiry == null || user.ResetPasswordTokenExpiry < DateTime.UtcNow)
+        if (user.ResetPasswordTokenExpiry == null ||
+            user.ResetPasswordTokenExpiry < DateTime.UtcNow)
             return false;
 
         var hashedPassword = _hasher.HashPassword(null, newPassword);
@@ -166,6 +181,4 @@ public class AuthService:IAuthService
 
         return true;
     }
-
-   
 }

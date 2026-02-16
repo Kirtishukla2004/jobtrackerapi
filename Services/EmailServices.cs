@@ -1,35 +1,36 @@
 ﻿using System.Net;
 using System.Net.Mail;
-using System.Text;
 using JobTracker.API.Interfaces;
-using static System.Net.WebRequestMethods;
 
 public class EmailServices : IEmailServices
 {
-    private readonly IConfiguration _config;
     private readonly HttpClient _http;
-  
-    public EmailServices(HttpClient http, IConfiguration config)
+
+    public EmailServices(HttpClient http)
     {
-        _config = config;
         _http = http;
     }
 
     public async Task SendAsync(string to, string subject, string body)
     {
-        var client = new SmtpClient("smtp.gmail.com")
+        var fromEmail =
+            Environment.GetEnvironmentVariable("Email_from")
+            ?? throw new InvalidOperationException("Email_from env variable missing");
+
+        var emailPassword =
+            Environment.GetEnvironmentVariable("Email_JobTrackerPassword")
+            ?? throw new InvalidOperationException("Email_JobTrackerPassword env variable missing");
+
+        using var client = new SmtpClient("smtp.gmail.com")
         {
             Port = 587,
             EnableSsl = true,
-            Credentials = new NetworkCredential(
-                _config["Email:Username"],
-                _config["EMAIL_PASSWORD"]
-            )
+            Credentials = new NetworkCredential(fromEmail, emailPassword)
         };
 
-        var mail = new MailMessage
+        using var mail = new MailMessage
         {
-            From = new MailAddress(_config["Email:From"]),
+            From = new MailAddress(fromEmail),
             Subject = subject,
             Body = body,
             IsBodyHtml = true
@@ -39,29 +40,38 @@ public class EmailServices : IEmailServices
 
         await client.SendMailAsync(mail);
     }
+
     public async Task SendFeedbackEmailAsync(string subject, string body)
     {
-        var client = new SmtpClient("smtp.gmail.com")
+        var fromEmail =
+            Environment.GetEnvironmentVariable("Email_from")
+            ?? throw new InvalidOperationException("Email_from env variable missing");
+
+        var emailPassword =
+            Environment.GetEnvironmentVariable("Email_JobTrackerPassword")
+            ?? throw new InvalidOperationException("Email_JobTrackerPassword env variable missing");
+
+        var feedbackToEmail =
+            Environment.GetEnvironmentVariable("Feedback_To_Email")
+            ?? throw new InvalidOperationException("Feedback_To_Email env variable missing");
+
+        using var client = new SmtpClient("smtp.gmail.com")
         {
             Port = 587,
             EnableSsl = true,
-            Credentials = new NetworkCredential(
-               _config["Email:Username"],
-               _config["Email:Password"]
-           )
+            Credentials = new NetworkCredential(fromEmail, emailPassword)
         };
 
-        var mail = new MailMessage
+        using var mail = new MailMessage
         {
-            From = new MailAddress(_config["Email:From"]),
+            From = new MailAddress(fromEmail),
             Subject = subject,
             Body = body,
             IsBodyHtml = true
         };
 
-        mail.To.Add(_config["Feedback:ToEmail"]); 
+        mail.To.Add(feedbackToEmail);
 
         await client.SendMailAsync(mail);
     }
 }
-
