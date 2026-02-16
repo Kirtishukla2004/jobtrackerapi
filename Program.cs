@@ -15,25 +15,8 @@ namespace JobTracker.API
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-
             builder.Services.AddControllers();
-            builder.Services.AddScoped<DBHelper>();
 
-            builder.Services.AddScoped<IJobService, JobService>();
-            builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IEmailServices, EmailServices>();
-            builder.Services.AddScoped<IQueriesAndFeedbacksServices, QueriesAndFeedbackServices>();
-            builder.Services.AddScoped<IInterviewQuestionOptionDdlService, InterviewQuestionOptionDdlService>();
-
-            builder.Services.AddScoped<IJobRepository, JobRepository>();
-            builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-            builder.Services.AddScoped<IQueriesAndFeedbackRepository, QueriesAndFeedbackRepository>();
-            builder.Services.AddScoped<IInterviewQuestionOptionDdlRepository, InterviewQuestionOptionDdlRepository>();
-
-            builder.Services.AddHttpClient<IInterviewAiService, InterviewAiService>();
-            builder.Services.AddHttpClient();
-
-            // ---------- CORS ----------
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowReact", policy =>
@@ -45,6 +28,7 @@ namespace JobTracker.API
                         .AllowCredentials();
                 });
             });
+
             var groqApiKey = Environment.GetEnvironmentVariable("GROQ_APIKEY");
             if (string.IsNullOrWhiteSpace(groqApiKey))
                 throw new Exception("GROQ_APIKEY environment variable is missing");
@@ -60,8 +44,23 @@ namespace JobTracker.API
             {
                 builder.Configuration["ConnectionStrings:DefaultConnection"] =
                     sqlConnectionString;
+
+                builder.Services.AddScoped<DBHelper>();
+
+                builder.Services.AddScoped<IJobRepository, JobRepository>();
+                builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+                builder.Services.AddScoped<IQueriesAndFeedbackRepository, QueriesAndFeedbackRepository>();
+                builder.Services.AddScoped<IInterviewQuestionOptionDdlRepository, InterviewQuestionOptionDdlRepository>();
+
+                builder.Services.AddScoped<IJobService, JobService>();
+                builder.Services.AddScoped<IAuthService, AuthService>();
+                builder.Services.AddScoped<IEmailServices, EmailServices>();
+                builder.Services.AddScoped<IQueriesAndFeedbacksServices, QueriesAndFeedbackServices>();
+                builder.Services.AddScoped<IInterviewQuestionOptionDdlService, InterviewQuestionOptionDdlService>();
             }
 
+            builder.Services.AddHttpClient<IInterviewAiService, InterviewAiService>();
+            builder.Services.AddHttpClient();
 
             builder.Services
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -85,10 +84,10 @@ namespace JobTracker.API
                     };
                 });
 
-            builder.WebHost.UseUrls("https://0.0.0.0:8080");
+            
+            builder.WebHost.UseUrls("http://0.0.0.0:8080");
 
             var app = builder.Build();
-
             if (!app.Environment.IsProduction())
             {
                 app.UseHttpsRedirection();
