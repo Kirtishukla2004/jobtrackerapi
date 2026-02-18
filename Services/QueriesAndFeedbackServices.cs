@@ -14,8 +14,11 @@ public class QueriesAndFeedbackServices : IQueriesAndFeedbacksServices
         _emailService = emailService;
     }
 
-    public async Task SubmitFeedbackAsync(int  userid,QueriesAndFeedbackdto dto)
-    { 
+    public async Task SubmitFeedbackAsync(int userid, QueriesAndFeedbackdto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Comment))
+            return;
+
         await _feedbackRepo.SaveFeedbackAsync(userid, dto.Comment);
 
         var body = $@"
@@ -25,9 +28,17 @@ public class QueriesAndFeedbackServices : IQueriesAndFeedbacksServices
             <p>{dto.Comment}</p>
         ";
 
-        await _emailService.SendFeedbackEmailAsync(
-            "New Feedback / Query",
-            body
-        );
+        try
+        {
+            await _emailService.SendFeedbackEmailAsync(
+                "New Feedback / Query",
+                body
+            );
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Feedback email failed:");
+            Console.WriteLine(ex);
+        }
     }
 }

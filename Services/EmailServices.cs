@@ -1,68 +1,61 @@
-﻿using System.Net;
-using System.Net.Mail;
+﻿using System.Text;
+using System.Text.Json;
 using JobTracker.API.Interfaces;
 
 public class EmailServices : IEmailServices
 {
+    private readonly HttpClient _http;
+
+    public EmailServices(HttpClient http)
+    {
+        _http = http;
+    }
+
     public async Task SendAsync(string to, string subject, string body)
     {
-        var fromEmail = Environment.GetEnvironmentVariable("Email_from")
-            ?? throw new InvalidOperationException("Email_from env variable missing");
+        var apiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY")
+            ?? throw new InvalidOperationException("RESEND_API_KEY missing");
 
-        var emailPassword = Environment.GetEnvironmentVariable("Email_JobTrackerPassword")
-            ?? throw new InvalidOperationException("Email_JobTrackerPassword env variable missing");
+        var fromEmail = Environment.GetEnvironmentVariable("EMAIL_FROM")
+            ?? throw new InvalidOperationException("EMAIL_FROM missing");
 
-        using var client = new SmtpClient("smtp.gmail.com")
+        var payload = new
         {
-            Port = 587,
-            EnableSsl = true,
-            Timeout = 10000, 
-            DeliveryMethod = SmtpDeliveryMethod.Network,
-            Credentials = new NetworkCredential(fromEmail, emailPassword)
+            from = $"JobTracker <{fromEmail}>",
+            to = new[] { to },
+            subject = subject,
+            html = body
         };
 
-        using var mail = new MailMessage
+        var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            "https://api.resend.com/emails"
+        );
+
+        request.Headers.Add("Authorization", $"Bearer {apiKey}");
+        request.Content = new StringContent(
+            JsonSerializer.Serialize(payload),
+            Encoding.UTF8,
+            "application/json"
+        );
+
+        var response = await _http.SendAsync(request);
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        Console.WriteLine("RESEND STATUS: " + response.StatusCode);
+        Console.WriteLine("RESEND RESPONSE: " + responseBody);
+
+        if (!response.IsSuccessStatusCode)
         {
-            From = new MailAddress(fromEmail, "JobTracker"),
-            Subject = subject,
-            Body = body,
-            IsBodyHtml = true
-        };
-
-        mail.To.Add(to);
-
-        await client.SendMailAsync(mail);
+            throw new Exception("Resend failed: " + responseBody);
+        }
     }
 
     public async Task SendFeedbackEmailAsync(string subject, string body)
     {
-        var fromEmail = Environment.GetEnvironmentVariable("Email_from")
-            ?? throw new InvalidOperationException("Email_from env variable missing");
-
-        var emailPassword = Environment.GetEnvironmentVariable("Email_JobTrackerPassword")
-            ?? throw new InvalidOperationException("Email_JobTrackerPassword env variable missing");
-
         var feedbackToEmail = Environment.GetEnvironmentVariable("Feedback_To_Email")
-            ?? throw new InvalidOperationException("Feedback_To_Email env variable missing");
+            ?? throw new InvalidOperationException("Feedback_To_Email missing");
 
-        using var client = new SmtpClient("smtp.gmail.com")
-        {
-            Port = 587,
-            EnableSsl = true,
-            Timeout = 10000,
-            Credentials = new NetworkCredential(fromEmail, emailPassword)
-        };
-
-        using var mail = new MailMessage
-        {
-            From = new MailAddress(fromEmail, "JobTracker Feedback"),
-            Subject = subject,
-            Body = body,
-            IsBodyHtml = true
-        };
-
-        mail.To.Add(feedbackToEmail);
-
-        await client.SendMailAsync(mail);
+        await SendAsync(feedbackToEmail, subject, body);
     }
 }

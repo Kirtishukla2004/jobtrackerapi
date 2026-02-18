@@ -147,7 +147,7 @@ public class AuthService : IAuthService
         var frontendUrl = "https://jobtracker-indol.vercel.app";
         var resetLink = $"{frontendUrl}/resetpassword?token={token}";
 
-        var emailBody = $@"
+        var body = $@"
         <p>Click the link below to reset your password:</p>
         <p><a href='{resetLink}'>{resetLink}</a></p>
         <p>This link expires in 15 minutes.</p>";
@@ -157,12 +157,12 @@ public class AuthService : IAuthService
             await _emailServices.SendAsync(
                 user.Username,
                 "Reset your password",
-                emailBody
+                body
             );
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Email sending failed:");
+            Console.WriteLine("Reset email failed:");
             Console.WriteLine(ex);
         }
     }

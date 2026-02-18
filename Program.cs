@@ -62,7 +62,7 @@ namespace JobTracker.API
 
             builder.Services.AddScoped<IJobService, JobService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
-            builder.Services.AddScoped<IEmailServices, EmailServices>();
+            builder.Services.AddHttpClient<IEmailServices, EmailServices>();
             builder.Services.AddScoped<IQueriesAndFeedbacksServices, QueriesAndFeedbackServices>();
             builder.Services.AddScoped<IInterviewQuestionOptionDdlService, InterviewQuestionOptionDdlService>();
 
