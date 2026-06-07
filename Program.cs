@@ -22,7 +22,7 @@ namespace JobTracker.API
                 options.AddPolicy("AllowReact", policy =>
                 {
                     policy
-                        .WithOrigins("https://jobtracker-indol.vercel.app")
+                        .WithOrigins("http://localhost:3000")
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();

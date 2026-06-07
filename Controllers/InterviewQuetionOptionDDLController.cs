@@ -1,5 +1,4 @@
 ﻿using JobTracker.API.Services;
-using JobTracker.API.Services.Implementations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

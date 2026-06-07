@@ -1,6 +1,4 @@
-﻿using System.Data;
-using System.Threading.Tasks;
-using JobTracker.API.Data;
+﻿using JobTracker.API.Data;
 using JobTracker.API.DTOs;
 using JobTracker.API.Interfaces;
 using JobTracker.API.Models;
